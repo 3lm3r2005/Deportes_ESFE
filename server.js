@@ -9,6 +9,7 @@ const jugadorRoutes = require('./src/routes/JugadorRoutes');
 const equipoRoutes = require('./src/routes/EquipoRoutes');
 const partidoRoutes = require('./src/routes/PartidoRoutes');
 const convocatoriaRoutes = require('./src/routes/ConvocatoriaRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/jugadores', jugadorRoutes);
 app.use('/api/equipos', equipoRoutes);
 app.use('/api/partidos', partidoRoutes);
 app.use('/api/convocatorias', convocatoriaRoutes);
+app.use('/api/auth', authRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
