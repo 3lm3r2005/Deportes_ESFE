@@ -12,8 +12,7 @@ const torneoEquipoSchema = new mongoose.Schema({
     required: true
   },
   firma: {
-    type: String,
-    required: true
+    type: String
   },
   estado: {
     type: String,

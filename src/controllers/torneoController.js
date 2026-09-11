@@ -1,7 +1,7 @@
 const Torneo = require('../models/Torneo');
 const Partido = require('../models/Partido');
 const Equipo = require('../models/Equipo');
-
+const Jugador = require('../models/Jugador');
 const crearTorneo = async (req, res) => {
   try {
     const nuevoTorneo = new Torneo(req.body);
@@ -139,11 +139,60 @@ const obtenerTablaPosiciones = async (req, res) => {
   }
 };
 
-;module.exports = {
+const obtenerTablaGoleadores = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const partidos = await Partido.find({ torneo_id: id });
+
+    const goleadores = {};
+
+    partidos.forEach((partido) => {
+      partido.estadisticas_jugadores.forEach((stat) => {
+        if (stat.goles > 0) {
+          const jugadorId = stat.jugador_id.toString();
+          const equipoId = stat.equipo_id.toString();
+
+          if (!goleadores[jugadorId]) {
+            goleadores[jugadorId] = {
+              jugador_id: jugadorId,
+              equipo_id: equipoId,
+              goles: 0
+            };
+          }
+          goleadores[jugadorId].goles += stat.goles;
+        }
+      });
+    });
+
+    const jugadorIds = Object.keys(goleadores);
+    const jugadores = await Jugador.find({ _id: { $in: jugadorIds } });
+    const equipoIds = [...new Set(Object.values(goleadores).map((g) => g.equipo_id))];
+    const equipos = await Equipo.find({ _id: { $in: equipoIds } });
+
+    const resultado = Object.values(goleadores).map((g) => {
+      const jugadorInfo = jugadores.find((j) => j._id.toString() === g.jugador_id);
+      const equipoInfo = equipos.find((e) => e._id.toString() === g.equipo_id);
+      return {
+        ...g,
+        nombre_jugador: jugadorInfo ? jugadorInfo.nombre : 'Jugador no encontrado',
+        nombre_equipo: equipoInfo ? equipoInfo.nombre : 'Equipo no encontrado'
+      };
+    });
+
+    resultado.sort((a, b) => b.goles - a.goles);
+
+    res.status(200).json(resultado);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = {
   crearTorneo,
   listarTorneos,
   obtenerTorneo,
   actualizarTorneo,
   eliminarTorneo,
-  obtenerTablaPosiciones
+  obtenerTablaPosiciones,
+  obtenerTablaGoleadores
 };

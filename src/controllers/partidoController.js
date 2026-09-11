@@ -1,7 +1,41 @@
 const Partido = require('../models/Partido');
+const Torneo = require('../models/Torneo');
+const Equipo = require('../models/Equipo');
 
 const crearPartido = async (req, res) => {
   try {
+    const { torneo_id, equipo_local_id, equipo_visitante_id } = req.body;
+
+    if (equipo_local_id === equipo_visitante_id) {
+      return res.status(400).json({ error: 'Un equipo no puede jugar contra sí mismo' });
+    }
+
+    const torneo = await Torneo.findById(torneo_id);
+    if (!torneo) {
+      return res.status(400).json({ error: 'El torneo indicado no existe' });
+    }
+
+    const equipoLocal = await Equipo.findById(equipo_local_id);
+    if (!equipoLocal) {
+      return res.status(400).json({ error: 'El equipo local indicado no existe' });
+    }
+
+    const equipoVisitante = await Equipo.findById(equipo_visitante_id);
+    if (!equipoVisitante) {
+      return res.status(400).json({ error: 'El equipo visitante indicado no existe' });
+    }
+
+    const idsInscritos = torneo.equipos_inscritos
+      .filter((e) => e.estado === 'inscrito')
+      .map((e) => e.equipo_id.toString());
+
+    if (!idsInscritos.includes(equipo_local_id)) {
+      return res.status(400).json({ error: 'El equipo local no está inscrito en ese torneo' });
+    }
+    if (!idsInscritos.includes(equipo_visitante_id)) {
+      return res.status(400).json({ error: 'El equipo visitante no está inscrito en ese torneo' });
+    }
+
     const nuevoPartido = new Partido(req.body);
     await nuevoPartido.save();
     res.status(201).json(nuevoPartido);

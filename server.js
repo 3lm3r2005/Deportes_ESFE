@@ -3,12 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const conectarDB = require('./src/config/db');
 
-const usuarioRoutes = require('./src/routes/UsuarioRoutes');
-const torneoRoutes = require('./src/routes/TorneoRoutes');
-const jugadorRoutes = require('./src/routes/JugadorRoutes');
-const equipoRoutes = require('./src/routes/EquipoRoutes');
-const partidoRoutes = require('./src/routes/PartidoRoutes');
-const convocatoriaRoutes = require('./src/routes/ConvocatoriaRoutes');
+const usuarioRoutes = require('./src/routes/usuarioRoutes');
+const torneoRoutes = require('./src/routes/torneoRoutes');
+const jugadorRoutes = require('./src/routes/jugadorRoutes');
+const equipoRoutes = require('./src/routes/equipoRoutes');
+const partidoRoutes = require('./src/routes/partidoRoutes');
+const convocatoriaRoutes = require('./src/routes/convocatoriaRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
