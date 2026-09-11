@@ -7,11 +7,12 @@ const {
   actualizarJugador,
   eliminarJugador
 } = require('../controllers/jugadorController');
+const { verificarToken, verificarRol } = require('../middleware/authMiddleware');
 
-router.post('/', crearJugador);
-router.get('/', listarJugadores);
-router.get('/:id', obtenerJugador);
-router.put('/:id', actualizarJugador);
-router.delete('/:id', eliminarJugador);
+router.post('/', verificarToken, verificarRol('admin', 'delegado'), crearJugador);
+router.get('/', verificarToken, listarJugadores);
+router.get('/:id', verificarToken, obtenerJugador);
+router.put('/:id', verificarToken, verificarRol('admin', 'delegado'), actualizarJugador);
+router.delete('/:id', verificarToken, verificarRol('admin'), eliminarJugador);
 
 module.exports = router;

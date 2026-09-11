@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const Usuario = require('../models/Usuario');
 
 const registrar = async (req, res) => {
@@ -33,4 +34,39 @@ const registrar = async (req, res) => {
   }
 };
 
-module.exports = { registrar };
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const usuario = await Usuario.findOne({ email });
+    if (!usuario) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const passwordCorrecta = await bcrypt.compare(password, usuario.password_hash);
+    if (!passwordCorrecta) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const token = jwt.sign(
+      { id: usuario._id, rol: usuario.rol },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+
+    res.status(200).json({
+      token,
+      usuario: {
+        id: usuario._id,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        email: usuario.email,
+        rol: usuario.rol
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { registrar, login };

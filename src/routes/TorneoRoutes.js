@@ -5,13 +5,16 @@ const {
   listarTorneos,
   obtenerTorneo,
   actualizarTorneo,
-  eliminarTorneo
+  eliminarTorneo,
+  obtenerTablaPosiciones
 } = require('../controllers/torneoController');
+const { verificarToken, verificarRol } = require('../middleware/authMiddleware');
 
-router.post('/', crearTorneo);
-router.get('/', listarTorneos);
-router.get('/:id', obtenerTorneo);
-router.put('/:id', actualizarTorneo);
-router.delete('/:id', eliminarTorneo);
+router.post('/', verificarToken, verificarRol('admin'), crearTorneo);
+router.get('/', verificarToken, listarTorneos);
+router.get('/:id', verificarToken, obtenerTorneo);
+router.get('/:id/tabla-posiciones', verificarToken, obtenerTablaPosiciones);
+router.put('/:id', verificarToken, verificarRol('admin'), actualizarTorneo);
+router.delete('/:id', verificarToken, verificarRol('admin'), eliminarTorneo);
 
 module.exports = router;

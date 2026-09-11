@@ -6,12 +6,13 @@ const {
   obtenerConvocatoria,
   actualizarConvocatoria,
   eliminarConvocatoria
-} = require('../controllers/ConvocatoriaController');
+} = require('../controllers/convocatoriaController');
+const { verificarToken, verificarRol } = require('../middleware/authMiddleware');
 
-router.post('/', crearConvocatoria);
-router.get('/', listarConvocatorias);
-router.get('/:id', obtenerConvocatoria);
-router.put('/:id', actualizarConvocatoria);
-router.delete('/:id', eliminarConvocatoria);
+router.post('/', verificarToken, verificarRol('admin'), crearConvocatoria);
+router.get('/', verificarToken, listarConvocatorias);
+router.get('/:id', verificarToken, obtenerConvocatoria);
+router.put('/:id', verificarToken, verificarRol('admin'), actualizarConvocatoria);
+router.delete('/:id', verificarToken, verificarRol('admin'), eliminarConvocatoria);
 
 module.exports = router;

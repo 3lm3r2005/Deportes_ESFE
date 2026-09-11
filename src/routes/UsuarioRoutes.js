@@ -7,11 +7,12 @@ const {
   actualizarUsuario,
   eliminarUsuario
 } = require('../controllers/usuarioController');
+const { verificarToken, verificarRol } = require('../middleware/authMiddleware');
 
-router.post('/', crearUsuario);
-router.get('/', listarUsuarios);
-router.get('/:id', obtenerUsuario);
-router.put('/:id', actualizarUsuario);
-router.delete('/:id', eliminarUsuario);
+router.post('/', verificarToken, verificarRol('admin'), crearUsuario);
+router.get('/', verificarToken, verificarRol('admin'), listarUsuarios);
+router.get('/:id', verificarToken, verificarRol('admin'), obtenerUsuario);
+router.put('/:id', verificarToken, verificarRol('admin'), actualizarUsuario);
+router.delete('/:id', verificarToken, verificarRol('admin'), eliminarUsuario);
 
 module.exports = router;
