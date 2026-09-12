@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const conectarDB = require('./src/config/db');
 
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
@@ -15,7 +16,15 @@ const app = express();
 
 conectarDB();
 
-app.use(cors());
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-use-cookie'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(express.json());
 
 app.get('/', (req, res) => {

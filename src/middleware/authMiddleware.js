@@ -1,16 +1,21 @@
 const jwt = require('jsonwebtoken');
 
 const verificarToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  let token;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
+
+  if (!token) {
     return res.status(401).json({ error: 'No se proporcionó un token' });
   }
 
-  const token = authHeader.split(' ')[1];
-
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     req.usuario = decoded;
     next();
   } catch (error) {

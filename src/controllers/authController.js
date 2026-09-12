@@ -11,14 +11,11 @@ const registrar = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe un usuario con ese email' });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const password_hash = await bcrypt.hash(password, salt);
-
     const nuevoUsuario = new Usuario({
       nombre,
       apellido,
       email,
-      password_hash,
+      password,
       rol,
       estado: 'activo'
     });
@@ -51,8 +48,17 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { id: usuario._id, rol: usuario.rol },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn: process.env.JWT_EXPIRES_IN, algorithm: 'HS256' }
     );
+
+    if (req.headers['x-use-cookie'] === 'true') {
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 8 * 60 * 60 * 1000
+      });
+    }
 
     res.status(200).json({
       token,

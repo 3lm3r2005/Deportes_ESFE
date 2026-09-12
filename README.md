@@ -10,6 +10,7 @@ Sistema web para la gestión y automatización del torneo de fútbol de la Insti
 - Mongoose
 - JWT (jsonwebtoken) para autenticación
 - bcryptjs para encriptar contraseñas
+- cookie-parser para leer cookies HttpOnly en las peticiones
 
 ## Roles del sistema
 
@@ -49,7 +50,8 @@ Deportes_ESFE_backend/
    PORT=4000
    MONGODB_URI=mongodb://localhost:27017/deportes_esfe
    JWT_SECRET=tu_clave_secreta
-   JWT_EXPIRES_IN=1d
+   JWT_EXPIRES_IN=8h
+   CORS_ORIGIN=http://localhost:5173
    ```
 4. Levantar el servidor en modo desarrollo:
    ```
@@ -70,13 +72,17 @@ El sistema usa 6 colecciones. La tabla de posiciones y la tabla de goleadores **
 
 ## Autenticación
 
-Todas las rutas (excepto registro y login) requieren un token JWT en el header:
+El token JWT se puede enviar de dos formas (`verificarToken` acepta cualquiera de las dos, revisa el header primero):
 
 ```
 Authorization: Bearer <token>
 ```
 
-El token se obtiene haciendo login y expira según `JWT_EXPIRES_IN` (por defecto, 1 día).
+Como alternativa al header, el login puede devolver el token en una cookie HttpOnly (más segura contra ataques XSS, ya que JavaScript del lado del cliente no puede leerla). Para activarlo, se debe enviar el header `x-use-cookie: true` en la petición de login. El middleware de autenticación acepta el token desde cualquiera de las dos fuentes.
+
+El token expira según `JWT_EXPIRES_IN` (8 horas) y se firma/verifica siempre con el algoritmo `HS256` explícito, para no aceptar tokens firmados con otro algoritmo.
+
+Las contraseñas nunca se manejan en texto plano fuera del modelo: el modelo `Usuario` tiene un campo virtual `password` que, al asignarse, se encripta automáticamente con bcrypt antes de guardarse (`pre('validate')`). Por eso, tanto en el registro como en la creación directa de usuarios, se manda `password` (texto plano) y no `password_hash`.
 
 ### POST /api/auth/registro
 Crea un nuevo usuario. Body:
@@ -89,6 +95,20 @@ Devuelve un token JWT. Body:
 ```json
 { "email": "...", "password": "..." }
 ```
+
+Si la petición incluye el header `x-use-cookie: true`, además del token en el JSON de respuesta, el servidor setea una cookie `HttpOnly` llamada `token` (con `secure` en producción y `sameSite: strict`).
+
+### CORS
+
+El servidor solo acepta peticiones desde el/los origen(es) definidos en `CORS_ORIGIN` (separados por coma si son varios; por defecto `http://localhost:5173`, el puerto de Vite). Se configura con `credentials: true` para permitir el envío de cookies entre frontend y backend.
+
+## Seguridad implementada
+
+- **Contraseñas**: nunca se guardan en texto plano. El modelo `Usuario` encripta automáticamente cualquier contraseña recibida (campo virtual `password`) antes de guardarla en `password_hash`, sin importar desde qué ruta se cree el usuario (registro público o creación directa por un admin).
+- **Exposición de datos**: el campo `password_hash` nunca se incluye en las respuestas de la API (se excluye explícitamente en las consultas).
+- **JWT**: firmado y verificado únicamente con el algoritmo `HS256` (se rechaza explícitamente cualquier otro algoritmo, incluyendo `none`), con una vida útil corta (8 horas) para reducir el riesgo si un token es robado.
+- **CORS**: configurado con una lista explícita de orígenes permitidos (no abierto a cualquier dominio), restringido a los métodos y cabeceras que la API realmente usa.
+- **CSRF**: al usar el header `Authorization: Bearer <token>` como método principal (en vez de cookies automáticas del navegador), se reduce significativamente el riesgo de CSRF clásico, ya que un sitio malicioso no puede forzar ese header.
 
 ## Endpoints por colección
 
@@ -127,6 +147,15 @@ Todos siguen el mismo patrón CRUD, salvo lo indicado.
 **Tabla de goleadores** (calculada desde `estadisticas_jugadores` dentro de los partidos):
 - Suma de goles por jugador across todos los partidos del torneo
 - Orden: mayor cantidad de goles
+
+## Últimos cambios (hardening de autenticación)
+
+- **models/Usuario.js**: se agregó un campo virtual `password` que encripta con bcrypt automáticamente hacia `password_hash` en un hook `pre('validate')`, sin importar desde qué controlador se cree el usuario.
+- **controllers/authController.js**: `registrar` ya no encripta a mano (lo hace el modelo). `login` firma el JWT fijando `algorithm: 'HS256'` y, si la petición trae el header `x-use-cookie: true`, además setea el token como cookie `HttpOnly`.
+- **controllers/usuarioController.js**: todas las respuestas excluyen `password_hash` (`.select('-password_hash')` o borrándolo del objeto). `actualizarUsuario` acepta `password` en texto plano y lo re-encripta si viene en el body.
+- **middleware/authMiddleware.js**: `verificarToken` ahora busca el token en el header `Authorization` o, si no está, en la cookie `token`. `jwt.verify` restringe explícitamente los algoritmos aceptados a `['HS256']`.
+- **server.js**: se agregó `cookie-parser` y una configuración explícita de CORS (`origin` desde `CORS_ORIGIN`, `credentials: true`) en vez del `cors()` genérico.
+- **.env**: se agregó `CORS_ORIGIN=http://localhost:5173` y `JWT_EXPIRES_IN` pasó de `1d` a `8h`.
 
 ## Estado del proyecto
 

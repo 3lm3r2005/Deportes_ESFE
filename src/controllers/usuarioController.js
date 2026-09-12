@@ -1,30 +1,30 @@
+const bcrypt = require('bcryptjs');
 const Usuario = require('../models/Usuario');
 
-// Crear un nuevo usuario
 const crearUsuario = async (req, res) => {
   try {
     const nuevoUsuario = new Usuario(req.body);
     await nuevoUsuario.save();
-    res.status(201).json(nuevoUsuario);
+    const usuarioSinPassword = nuevoUsuario.toObject();
+    delete usuarioSinPassword.password_hash;
+    res.status(201).json(usuarioSinPassword);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
 
-// Listar todos los usuarios
 const listarUsuarios = async (req, res) => {
   try {
-    const usuarios = await Usuario.find();
+    const usuarios = await Usuario.find().select('-password_hash');
     res.status(200).json(usuarios);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// Obtener un usuario por su ID
 const obtenerUsuario = async (req, res) => {
   try {
-    const usuario = await Usuario.findById(req.params.id);
+    const usuario = await Usuario.findById(req.params.id).select('-password_hash');
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -34,13 +34,20 @@ const obtenerUsuario = async (req, res) => {
   }
 };
 
-// Actualizar un usuario
 const actualizarUsuario = async (req, res) => {
   try {
-    const usuario = await Usuario.findByIdAndUpdate(req.params.id, req.body, {
+    const datosActualizar = { ...req.body };
+
+    if (datosActualizar.password) {
+      const salt = await bcrypt.genSalt(10);
+      datosActualizar.password_hash = await bcrypt.hash(datosActualizar.password, salt);
+      delete datosActualizar.password;
+    }
+
+    const usuario = await Usuario.findByIdAndUpdate(req.params.id, datosActualizar, {
       new: true,
       runValidators: true
-    });
+    }).select('-password_hash');
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -50,7 +57,6 @@ const actualizarUsuario = async (req, res) => {
   }
 };
 
-// Eliminar un usuario
 const eliminarUsuario = async (req, res) => {
   try {
     const usuario = await Usuario.findByIdAndDelete(req.params.id);
