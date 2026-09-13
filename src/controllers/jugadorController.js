@@ -1,4 +1,5 @@
 const Jugador = require('../models/Jugador');
+const Equipo = require('../models/Equipo');
 
 const crearJugador = async (req, res) => {
   try {
@@ -12,6 +13,16 @@ const crearJugador = async (req, res) => {
 
 const listarJugadores = async (req, res) => {
   try {
+    if (req.usuario.rol === 'delegado') {
+      const equipo = await Equipo.findOne({ delegado_id: req.usuario.id });
+      if (!equipo) {
+        return res.status(200).json([]);
+      }
+      const idsJugadores = equipo.jugadores_inscritos.map((j) => j.jugador_id);
+      const jugadores = await Jugador.find({ _id: { $in: idsJugadores } });
+      return res.status(200).json(jugadores);
+    }
+
     const jugadores = await Jugador.find();
     res.status(200).json(jugadores);
   } catch (error) {
