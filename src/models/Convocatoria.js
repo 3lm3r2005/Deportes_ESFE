@@ -6,8 +6,18 @@ const convocatoriaSchema = new mongoose.Schema({
     ref: 'Torneo',
     required: true
   },
-  titulo: { type: String, required: true },
-  mensaje: { type: String, required: true },
+  titulo: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: [3, 'El título debe tener al menos 3 caracteres']
+  },
+  mensaje: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: [5, 'El mensaje debe tener al menos 5 caracteres']
+  },
   fecha_publicacion: { type: Date, required: true },
   fecha_limite: { type: Date },
   estado: {

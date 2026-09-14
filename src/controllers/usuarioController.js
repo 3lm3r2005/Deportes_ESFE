@@ -9,6 +9,9 @@ const crearUsuario = async (req, res) => {
     delete usuarioSinPassword.password_hash;
     res.status(201).json(usuarioSinPassword);
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Ya existe un usuario registrado con ese correo electrónico' });
+    }
     res.status(400).json({ error: error.message });
   }
 };
@@ -53,10 +56,12 @@ const actualizarUsuario = async (req, res) => {
     }
     res.status(200).json(usuario);
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Ya existe un usuario registrado con ese correo electrónico' });
+    }
     res.status(400).json({ error: error.message });
   }
 };
-
 const eliminarUsuario = async (req, res) => {
   try {
     const usuario = await Usuario.findByIdAndDelete(req.params.id);

@@ -7,7 +7,9 @@ const {
   actualizarTorneo,
   eliminarTorneo,
   obtenerTablaPosiciones,
-  obtenerTablaGoleadores
+  obtenerTablaGoleadores,
+  obtenerTablaTarjetas,
+  inscribirEquipo
 
 } = require('../controllers/torneoController');
 const { verificarToken, verificarRol } = require('../middleware/authMiddleware');
@@ -19,5 +21,6 @@ router.get('/:id/posiciones', verificarToken, obtenerTablaPosiciones);
 router.get('/:id/goleadores', verificarToken, obtenerTablaGoleadores);
 router.put('/:id', verificarToken, verificarRol('admin'), actualizarTorneo);
 router.delete('/:id', verificarToken, verificarRol('admin'), eliminarTorneo);
-
+router.put('/:id/inscribir-equipo', verificarToken, verificarRol('admin', 'delegado'), inscribirEquipo);
+router.get('/:id/tarjetas', verificarToken, obtenerTablaTarjetas);
 module.exports = router;

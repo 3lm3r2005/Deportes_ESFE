@@ -71,6 +71,43 @@ const eliminarTorneo = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const inscribirEquipo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { equipo_id, fecha_inscripcion, firma } = req.body;
+
+    if (req.usuario.rol === 'delegado') {
+      const equipo = await Equipo.findById(equipo_id);
+      if (!equipo || equipo.delegado_id.toString() !== req.usuario.id) {
+        return res.status(403).json({ error: 'Solo puedes inscribir tu propio equipo' });
+      }
+    }
+
+    const torneo = await Torneo.findById(id);
+    if (!torneo) {
+      return res.status(404).json({ error: 'Torneo no encontrado' });
+    }
+
+    const yaInscrito = torneo.equipos_inscritos.some(
+      (e) => e.equipo_id.toString() === equipo_id && e.estado === 'inscrito'
+    );
+    if (yaInscrito) {
+      return res.status(400).json({ error: 'Este equipo ya está inscrito en el torneo' });
+    }
+
+    torneo.equipos_inscritos.push({
+      equipo_id,
+      fecha_inscripcion: fecha_inscripcion || new Date(),
+      firma,
+      estado: 'inscrito',
+    });
+
+    await torneo.save();
+    res.status(200).json(torneo);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 const obtenerTablaPosiciones = async (req, res) => {
   try {
     const { id } = req.params;
@@ -150,6 +187,55 @@ const obtenerTablaPosiciones = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const obtenerTablaTarjetas = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const partidos = await Partido.find({ torneo_id: id });
+
+    const tarjetas = {};
+
+    partidos.forEach((partido) => {
+      partido.estadisticas_jugadores.forEach((stat) => {
+        if (stat.tarjetas_amarillas > 0 || stat.tarjetas_rojas > 0) {
+          const jugadorId = stat.jugador_id.toString();
+          const equipoId = stat.equipo_id.toString();
+
+          if (!tarjetas[jugadorId]) {
+            tarjetas[jugadorId] = {
+              jugador_id: jugadorId,
+              equipo_id: equipoId,
+              tarjetas_amarillas: 0,
+              tarjetas_rojas: 0,
+            };
+          }
+          tarjetas[jugadorId].tarjetas_amarillas += stat.tarjetas_amarillas;
+          tarjetas[jugadorId].tarjetas_rojas += stat.tarjetas_rojas;
+        }
+      });
+    });
+
+    const jugadorIds = Object.keys(tarjetas);
+    const jugadores = await Jugador.find({ _id: { $in: jugadorIds } });
+    const equipoIds = [...new Set(Object.values(tarjetas).map((t) => t.equipo_id))];
+    const equipos = await Equipo.find({ _id: { $in: equipoIds } });
+
+    const resultado = Object.values(tarjetas).map((t) => {
+      const jugadorInfo = jugadores.find((j) => j._id.toString() === t.jugador_id);
+      const equipoInfo = equipos.find((e) => e._id.toString() === t.equipo_id);
+      return {
+        ...t,
+        nombre_jugador: jugadorInfo ? jugadorInfo.nombre : 'Jugador no encontrado',
+        nombre_equipo: equipoInfo ? equipoInfo.nombre : 'Equipo no encontrado'
+      };
+    });
+
+    resultado.sort((a, b) => (b.tarjetas_rojas - a.tarjetas_rojas) || (b.tarjetas_amarillas - a.tarjetas_amarillas));
+
+    res.status(200).json(resultado);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 const obtenerTablaGoleadores = async (req, res) => {
   try {
@@ -206,5 +292,9 @@ module.exports = {
   actualizarTorneo,
   eliminarTorneo,
   obtenerTablaPosiciones,
-  obtenerTablaGoleadores
+  obtenerTablaGoleadores,
+  obtenerTablaTarjetas,
+  inscribirEquipo
+
 };
+

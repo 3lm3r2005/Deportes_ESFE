@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Subdocumento embebido: datos de un equipo dentro de un torneo específico
 const torneoEquipoSchema = new mongoose.Schema({
   equipo_id: {
     type: mongoose.Schema.Types.ObjectId,
@@ -24,11 +23,15 @@ const torneoEquipoSchema = new mongoose.Schema({
 const torneoSchema = new mongoose.Schema({
   nombre: {
     type: String,
-    required: true
+    required: true,
+    trim: true,
+    minlength: [3, 'El nombre debe tener al menos 3 caracteres']
   },
   anio: {
     type: Number,
-    required: true
+    required: true,
+    min: [2020, 'Año inválido'],
+    max: [2100, 'Año inválido']
   },
   fecha_inicio: {
     type: Date,

@@ -80,6 +80,42 @@ const actualizarPartido = async (req, res) => {
       return res.status(403).json({ error: 'No eres el árbitro asignado a este partido' });
     }
 
+    const equipoLocalId = req.body.equipo_local_id || partidoActual.equipo_local_id.toString();
+    const equipoVisitanteId = req.body.equipo_visitante_id || partidoActual.equipo_visitante_id.toString();
+    const torneoId = req.body.torneo_id || partidoActual.torneo_id.toString();
+
+    if (equipoLocalId === equipoVisitanteId) {
+      return res.status(400).json({ error: 'Un equipo no puede jugar contra sí mismo' });
+    }
+
+    if (req.body.equipo_local_id || req.body.equipo_visitante_id || req.body.torneo_id) {
+      const torneo = await Torneo.findById(torneoId);
+      if (!torneo) {
+        return res.status(400).json({ error: 'El torneo indicado no existe' });
+      }
+
+      const equipoLocal = await Equipo.findById(equipoLocalId);
+      if (!equipoLocal) {
+        return res.status(400).json({ error: 'El equipo local indicado no existe' });
+      }
+
+      const equipoVisitante = await Equipo.findById(equipoVisitanteId);
+      if (!equipoVisitante) {
+        return res.status(400).json({ error: 'El equipo visitante indicado no existe' });
+      }
+
+      const idsInscritos = torneo.equipos_inscritos
+        .filter((e) => e.estado === 'inscrito')
+        .map((e) => e.equipo_id.toString());
+
+      if (!idsInscritos.includes(equipoLocalId)) {
+        return res.status(400).json({ error: 'El equipo local no está inscrito en ese torneo' });
+      }
+      if (!idsInscritos.includes(equipoVisitanteId)) {
+        return res.status(400).json({ error: 'El equipo visitante no está inscrito en ese torneo' });
+      }
+    }
+
     const partido = await Partido.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
