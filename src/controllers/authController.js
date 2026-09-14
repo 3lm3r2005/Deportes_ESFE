@@ -6,20 +6,17 @@ const registrar = async (req, res) => {
   try {
     const { nombre, apellido, email, password, rol } = req.body;
 
+    const rolesPermitidosEnRegistroPublico = ['arbitro', 'delegado'];
+    if (!rolesPermitidosEnRegistroPublico.includes(rol)) {
+      return res.status(400).json({ error: 'El registro público solo permite los roles: arbitro, delegado' });
+    }
+
     const existe = await Usuario.findOne({ email });
     if (existe) {
       return res.status(400).json({ error: 'Ya existe un usuario con ese email' });
     }
 
-    const nuevoUsuario = new Usuario({
-      nombre,
-      apellido,
-      email,
-      password,
-      rol,
-      estado: 'activo'
-    });
-
+    const nuevoUsuario = new Usuario({ nombre, apellido, email, password, rol, estado: 'activo' });
     await nuevoUsuario.save();
 
     const usuarioSinPassword = nuevoUsuario.toObject();

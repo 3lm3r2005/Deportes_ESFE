@@ -7,6 +7,9 @@ const crearJugador = async (req, res) => {
     await nuevoJugador.save();
     res.status(201).json(nuevoJugador);
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Ya existe un jugador registrado con ese carné' });
+    }
     res.status(400).json({ error: error.message });
   }
 };

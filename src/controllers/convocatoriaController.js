@@ -1,7 +1,15 @@
 const Convocatoria = require('../models/Convocatoria');
+const Torneo = require('../models/Torneo');
 
 const crearConvocatoria = async (req, res) => {
   try {
+    const { torneo_id } = req.body;
+
+    const torneo = await Torneo.findById(torneo_id);
+    if (!torneo) {
+      return res.status(400).json({ error: 'El torneo indicado no existe' });
+    }
+
     const nuevaConvocatoria = new Convocatoria(req.body);
     await nuevaConvocatoria.save();
     res.status(201).json(nuevaConvocatoria);
@@ -9,7 +17,6 @@ const crearConvocatoria = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
 const listarConvocatorias = async (req, res) => {
   try {
     const convocatorias = await Convocatoria.find();

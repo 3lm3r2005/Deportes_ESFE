@@ -46,6 +46,10 @@ const crearPartido = async (req, res) => {
 
 const listarPartidos = async (req, res) => {
   try {
+    if (req.usuario.rol === 'arbitro') {
+      const partidos = await Partido.find({ arbitro_id: req.usuario.id });
+      return res.status(200).json(partidos);
+    }
     const partidos = await Partido.find();
     res.status(200).json(partidos);
   } catch (error) {
@@ -67,19 +71,24 @@ const obtenerPartido = async (req, res) => {
 
 const actualizarPartido = async (req, res) => {
   try {
+    const partidoActual = await Partido.findById(req.params.id);
+    if (!partidoActual) {
+      return res.status(404).json({ error: 'Partido no encontrado' });
+    }
+
+    if (req.usuario.rol === 'arbitro' && partidoActual.arbitro_id.toString() !== req.usuario.id) {
+      return res.status(403).json({ error: 'No eres el árbitro asignado a este partido' });
+    }
+
     const partido = await Partido.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
     });
-    if (!partido) {
-      return res.status(404).json({ error: 'Partido no encontrado' });
-    }
     res.status(200).json(partido);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
-
 const eliminarPartido = async (req, res) => {
   try {
     const partido = await Partido.findByIdAndDelete(req.params.id);

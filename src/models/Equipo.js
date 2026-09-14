@@ -18,7 +18,19 @@ const equipoJugadorSchema = new mongoose.Schema({
 
 const equipoSchema = new mongoose.Schema({
   nombre: { type: String, required: true },
-  carrera: { type: String, required: true },
+ carrera: {
+  type: String,
+  required: true,
+  enum: {
+    values: [
+      'Técnico en Ingeniería Eléctrica',
+      'Técnico en Desarrollo de Software',
+      'Técnico en Mercadeo',
+      'Técnico en Turismo',
+    ],
+    message: 'Selecciona una carrera válida',
+  },
+},
   anio: { type: Number, required: true },
   delegado_id: {
     type: mongoose.Schema.Types.ObjectId,

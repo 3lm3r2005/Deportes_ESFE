@@ -4,6 +4,12 @@ const Equipo = require('../models/Equipo');
 const Jugador = require('../models/Jugador');
 const crearTorneo = async (req, res) => {
   try {
+    const { fecha_inicio, fecha_fin } = req.body;
+
+    if (fecha_inicio && fecha_fin && new Date(fecha_fin) < new Date(fecha_inicio)) {
+      return res.status(400).json({ error: 'La fecha de fin no puede ser anterior a la fecha de inicio' });
+    }
+
     const nuevoTorneo = new Torneo(req.body);
     await nuevoTorneo.save();
     res.status(201).json(nuevoTorneo);
@@ -35,6 +41,12 @@ const obtenerTorneo = async (req, res) => {
 
 const actualizarTorneo = async (req, res) => {
   try {
+    const { fecha_inicio, fecha_fin } = req.body;
+
+    if (fecha_inicio && fecha_fin && new Date(fecha_fin) < new Date(fecha_inicio)) {
+      return res.status(400).json({ error: 'La fecha de fin no puede ser anterior a la fecha de inicio' });
+    }
+
     const torneo = await Torneo.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
