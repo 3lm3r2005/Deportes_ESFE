@@ -27,6 +27,7 @@ const equipoSchema = new mongoose.Schema({
     trim: true,
     minlength: [3, 'El nombre debe tener al menos 3 caracteres']
   },
+  logo_url: { type: String },
   carrera: {
     type: String,
     required: true,

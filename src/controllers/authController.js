@@ -6,9 +6,9 @@ const registrar = async (req, res) => {
   try {
     const { nombre, apellido, email, password, rol } = req.body;
 
-    const rolesPermitidosEnRegistroPublico = ['arbitro', 'delegado'];
+    const rolesPermitidosEnRegistroPublico = ['aficionado'];
     if (!rolesPermitidosEnRegistroPublico.includes(rol)) {
-      return res.status(400).json({ error: 'El registro público solo permite los roles: arbitro, delegado' });
+      return res.status(400).json({ error: 'El registro público solo permite el rol: aficionado' });
     }
 
     const existe = await Usuario.findOne({ email });
@@ -58,15 +58,17 @@ const login = async (req, res) => {
     }
 
     res.status(200).json({
-      token,
-      usuario: {
-        id: usuario._id,
-        nombre: usuario.nombre,
-        apellido: usuario.apellido,
-        email: usuario.email,
-        rol: usuario.rol
-      }
-    });
+  token,
+  usuario: {
+    id: usuario._id,
+    nombre: usuario.nombre,
+    apellido: usuario.apellido,
+    email: usuario.email,
+    rol: usuario.rol,
+    foto_url: usuario.foto_url
+  }
+});
+    
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

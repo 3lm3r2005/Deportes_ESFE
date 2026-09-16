@@ -4,13 +4,14 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const conectarDB = require('./src/config/db');
 
-const usuarioRoutes = require('./src/routes/usuarioRoutes');
+const usuarioRoutes = require('./src/routes/UsuarioRoutes');
 const torneoRoutes = require('./src/routes/torneoRoutes');
 const jugadorRoutes = require('./src/routes/jugadorRoutes');
 const equipoRoutes = require('./src/routes/equipoRoutes');
 const partidoRoutes = require('./src/routes/partidoRoutes');
-const convocatoriaRoutes = require('./src/routes/convocatoriaRoutes');
+const convocatoriaRoutes = require('./src/routes/ConvocatoriaRoutes');
 const authRoutes = require('./src/routes/authRoutes');
+const publicacionRoutes = require('./src/routes/publicacionRoutes');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/equipos', equipoRoutes);
 app.use('/api/partidos', partidoRoutes);
 app.use('/api/convocatorias', convocatoriaRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/publicaciones', publicacionRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
