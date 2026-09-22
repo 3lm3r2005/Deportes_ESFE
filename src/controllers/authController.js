@@ -42,36 +42,45 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
+    if (usuario.estado !== 'activo') {
+      return res.status(403).json({ error: 'Tu cuenta está inactiva. Contacta al administrador.' });
+    }
+
     const token = jwt.sign(
       { id: usuario._id, rol: usuario.rol },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN, algorithm: 'HS256' }
     );
 
-    if (req.headers['x-use-cookie'] === 'true') {
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 8 * 60 * 60 * 1000
-      });
-    }
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 8 * 60 * 60 * 1000
+    });
 
     res.status(200).json({
-  token,
-  usuario: {
-    id: usuario._id,
-    nombre: usuario.nombre,
-    apellido: usuario.apellido,
-    email: usuario.email,
-    rol: usuario.rol,
-    foto_url: usuario.foto_url
-  }
-});
-    
+      usuario: {
+        id: usuario._id,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        email: usuario.email,
+        rol: usuario.rol,
+        foto_url: usuario.foto_url
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-module.exports = { registrar, login };
+const logout = (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  res.status(200).json({ mensaje: 'Sesión cerrada correctamente' });
+};
+
+module.exports = { registrar, login, logout };
