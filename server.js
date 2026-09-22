@@ -18,8 +18,11 @@ const app = express();
 
 conectarDB();
 
+const clientUrl = process.env.CLIENT_URL || process.env.CORS_ORIGIN;
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:5173'],
+  origin: clientUrl && clientUrl !== '*'
+    ? clientUrl.split(',').map(url => url.trim())
+    : (clientUrl === '*' ? true : ['http://localhost:5173']),
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-use-cookie'],
   credentials: true
@@ -44,6 +47,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/publicaciones', publicacionRoutes);
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

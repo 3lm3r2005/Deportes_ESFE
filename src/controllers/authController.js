@@ -52,14 +52,18 @@ const login = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN, algorithm: 'HS256' }
     );
 
+    const isSecure = process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : process.env.NODE_ENV === 'production';
+    const sameSiteMode = process.env.COOKIE_SAMESITE || (process.env.NODE_ENV === 'production' ? 'none' : 'lax');
+
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isSecure,
+      sameSite: sameSiteMode,
       maxAge: 8 * 60 * 60 * 1000
     });
 
     res.status(200).json({
+      token,
       usuario: {
         id: usuario._id,
         nombre: usuario.nombre,
@@ -75,10 +79,13 @@ const login = async (req, res) => {
 };
 
 const logout = (req, res) => {
+  const isSecure = process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : process.env.NODE_ENV === 'production';
+  const sameSiteMode = process.env.COOKIE_SAMESITE || (process.env.NODE_ENV === 'production' ? 'none' : 'lax');
+
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    secure: isSecure,
+    sameSite: sameSiteMode
   });
   res.status(200).json({ mensaje: 'Sesión cerrada correctamente' });
 };
