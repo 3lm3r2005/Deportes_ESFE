@@ -29,13 +29,32 @@ const listarEquipos = async (req, res) => {
       const equipos = await Equipo.find({ delegado_id: req.usuario.id });
       return res.status(200).json(equipos);
     }
-    const equipos = await Equipo.find();
-    res.status(200).json(equipos);
+
+    const { page, limit } = req.query;
+    const usarPaginacion = page || limit;
+
+    if (!usarPaginacion) {
+      const equipos = await Equipo.find();
+      return res.status(200).json(equipos);
+    }
+
+    const pagina = parseInt(page) || 1;
+    const limite = parseInt(limit) || 10;
+    const saltar = (pagina - 1) * limite;
+
+    const total = await Equipo.countDocuments();
+    const equipos = await Equipo.find().skip(saltar).limit(limite);
+
+    res.status(200).json({
+      equipos,
+      total,
+      totalPaginas: Math.ceil(total / limite),
+      pagina,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
 const obtenerEquipo = async (req, res) => {
   try {
     const equipo = await Equipo.findById(req.params.id);
@@ -51,6 +70,15 @@ const obtenerEquipo = async (req, res) => {
 const actualizarEquipo = async (req, res) => {
   try {
     const { delegado_id } = req.body;
+
+    const equipoActual = await Equipo.findById(req.params.id);
+    if (!equipoActual) {
+      return res.status(404).json({ error: 'Equipo no encontrado' });
+    }
+
+    if (req.usuario.rol === 'delegado' && equipoActual.delegado_id.toString() !== req.usuario.id) {
+      return res.status(403).json({ error: 'Solo puedes editar tu propio equipo' });
+    }
 
     if (req.usuario.rol === 'delegado' && delegado_id !== undefined && delegado_id !== req.usuario.id) {
       return res.status(403).json({ error: 'Un delegado solo puede asignarse a sí mismo como delegado del equipo' });
@@ -70,9 +98,6 @@ const actualizarEquipo = async (req, res) => {
       new: true,
       runValidators: true
     });
-    if (!equipo) {
-      return res.status(404).json({ error: 'Equipo no encontrado' });
-    }
     res.status(200).json(equipo);
   } catch (error) {
     res.status(400).json({ error: error.message });

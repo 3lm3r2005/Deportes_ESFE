@@ -18,8 +18,27 @@ const crearUsuario = async (req, res) => {
 
 const listarUsuarios = async (req, res) => {
   try {
-    const usuarios = await Usuario.find().select('-password_hash');
-    res.status(200).json(usuarios);
+    const { page, limit } = req.query;
+    const usarPaginacion = page || limit;
+
+    if (!usarPaginacion) {
+      const usuarios = await Usuario.find().select('-password_hash');
+      return res.status(200).json(usuarios);
+    }
+
+    const pagina = parseInt(page) || 1;
+    const limite = parseInt(limit) || 10;
+    const saltar = (pagina - 1) * limite;
+
+    const total = await Usuario.countDocuments();
+    const usuarios = await Usuario.find().select('-password_hash').skip(saltar).limit(limite);
+
+    res.status(200).json({
+      usuarios,
+      total,
+      totalPaginas: Math.ceil(total / limite),
+      pagina,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

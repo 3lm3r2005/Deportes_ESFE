@@ -16,6 +16,9 @@ const crearJugador = async (req, res) => {
 
 const listarJugadores = async (req, res) => {
   try {
+    const { page, limit } = req.query;
+    const usarPaginacion = page || limit;
+
     if (req.usuario.rol === 'delegado') {
       const equipo = await Equipo.findOne({ delegado_id: req.usuario.id });
       if (!equipo) {
@@ -26,8 +29,24 @@ const listarJugadores = async (req, res) => {
       return res.status(200).json(jugadores);
     }
 
-    const jugadores = await Jugador.find();
-    res.status(200).json(jugadores);
+    if (!usarPaginacion) {
+      const jugadores = await Jugador.find();
+      return res.status(200).json(jugadores);
+    }
+
+    const pagina = parseInt(page) || 1;
+    const limite = parseInt(limit) || 10;
+    const saltar = (pagina - 1) * limite;
+
+    const total = await Jugador.countDocuments();
+    const jugadores = await Jugador.find().skip(saltar).limit(limite);
+
+    res.status(200).json({
+      jugadores,
+      total,
+      totalPaginas: Math.ceil(total / limite),
+      pagina,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -47,6 +66,16 @@ const obtenerJugador = async (req, res) => {
 
 const actualizarJugador = async (req, res) => {
   try {
+    if (req.usuario.rol === 'delegado') {
+      const equipo = await Equipo.findOne({ delegado_id: req.usuario.id });
+      const esDeSuEquipo = equipo?.jugadores_inscritos.some(
+        (j) => j.jugador_id.toString() === req.params.id
+      );
+      if (!esDeSuEquipo) {
+        return res.status(403).json({ error: 'Solo puedes editar jugadores de tu propio equipo' });
+      }
+    }
+
     const jugador = await Jugador.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
@@ -62,6 +91,16 @@ const actualizarJugador = async (req, res) => {
 
 const eliminarJugador = async (req, res) => {
   try {
+    if (req.usuario.rol === 'delegado') {
+      const equipo = await Equipo.findOne({ delegado_id: req.usuario.id });
+      const esDeSuEquipo = equipo?.jugadores_inscritos.some(
+        (j) => j.jugador_id.toString() === req.params.id
+      );
+      if (!esDeSuEquipo) {
+        return res.status(403).json({ error: 'Solo puedes eliminar jugadores de tu propio equipo' });
+      }
+    }
+
     const jugador = await Jugador.findByIdAndDelete(req.params.id);
     if (!jugador) {
       return res.status(404).json({ error: 'Jugador no encontrado' });

@@ -3,13 +3,14 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const conectarDB = require('./src/config/db');
+const helmet = require('helmet');
 
-const usuarioRoutes = require('./src/routes/UsuarioRoutes');
+const usuarioRoutes = require('./src/routes/usuarioRoutes');
 const torneoRoutes = require('./src/routes/torneoRoutes');
 const jugadorRoutes = require('./src/routes/jugadorRoutes');
 const equipoRoutes = require('./src/routes/equipoRoutes');
 const partidoRoutes = require('./src/routes/partidoRoutes');
-const convocatoriaRoutes = require('./src/routes/ConvocatoriaRoutes');
+const convocatoriaRoutes = require('./src/routes/convocatoriaRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const publicacionRoutes = require('./src/routes/publicacionRoutes');
 
@@ -24,6 +25,7 @@ const corsOptions = {
   credentials: true
 };
 
+app.use(helmet());
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());

@@ -46,12 +46,35 @@ const crearPartido = async (req, res) => {
 
 const listarPartidos = async (req, res) => {
   try {
+    const { page, limit, estado } = req.query;
+    const usarPaginacion = page || limit;
+
+    const filtro = {};
     if (req.usuario.rol === 'arbitro') {
-      const partidos = await Partido.find({ arbitro_id: req.usuario.id });
+      filtro.arbitro_id = req.usuario.id;
+    }
+    if (estado) {
+      filtro.estado = estado;
+    }
+
+    if (!usarPaginacion) {
+      const partidos = await Partido.find(filtro);
       return res.status(200).json(partidos);
     }
-    const partidos = await Partido.find();
-    res.status(200).json(partidos);
+
+    const pagina = parseInt(page) || 1;
+    const limite = parseInt(limit) || 10;
+    const saltar = (pagina - 1) * limite;
+
+    const total = await Partido.countDocuments(filtro);
+    const partidos = await Partido.find(filtro).skip(saltar).limit(limite);
+
+    res.status(200).json({
+      partidos,
+      total,
+      totalPaginas: Math.ceil(total / limite),
+      pagina,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
