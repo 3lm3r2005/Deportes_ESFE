@@ -6,7 +6,7 @@ const {
   obtenerConvocatoria,
   actualizarConvocatoria,
   eliminarConvocatoria
-} = require('../controllers/ConvocatoriaController');
+} = require('../controllers/convocatoriaController');
 const { verificarToken, verificarRol } = require('../middleware/authMiddleware');
 
 router.post('/', verificarToken, verificarRol('admin'), crearConvocatoria);
