@@ -1,5 +1,7 @@
 const bcrypt = require('bcryptjs');
 const Usuario = require('../models/Usuario');
+const Equipo = require('../models/Equipo');
+const Partido = require('../models/Partido');
 
 const crearUsuario = async (req, res) => {
   try {
@@ -112,6 +114,20 @@ const eliminarUsuario = async (req, res) => {
   try {
     if (req.params.id === req.usuario.id) {
       return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta mientras tienes la sesión iniciada' });
+    }
+
+    const esDelegadoDe = await Equipo.findOne({ delegado_id: req.params.id });
+    if (esDelegadoDe) {
+      return res.status(400).json({
+        error: `No se puede eliminar este usuario porque es el delegado asignado al equipo "${esDelegadoDe.nombre}". Asigna otro delegado al equipo primero.`
+      });
+    }
+
+    const tienePartidosArbitro = await Partido.findOne({ arbitro_id: req.params.id, estado: { $ne: 'finalizado' } });
+    if (tienePartidosArbitro) {
+      return res.status(400).json({
+        error: 'No se puede eliminar este árbitro porque tiene partidos pendientes o programados.'
+      });
     }
 
     const usuario = await Usuario.findByIdAndDelete(req.params.id);

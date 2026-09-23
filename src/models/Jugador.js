@@ -12,7 +12,14 @@ const jugadorSchema = new mongoose.Schema({
     match: [/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/, 'El apellido solo puede contener letras'],
   },
   foto_url: { type: String },
-  carne: { type: String, required: true, unique: true },
+  carne: {
+    type: String,
+    required: true,
+    unique: true,
+    uppercase: true,
+    trim: true,
+    match: [/^[A-Za-z]{2}[0-9]{4,6}$/, 'El carné debe iniciar con 2 letras y tener de 4 a 6 números (ej. PO2026, PO25001)'],
+  },
   telefono: {
     type: String,
     required: true,

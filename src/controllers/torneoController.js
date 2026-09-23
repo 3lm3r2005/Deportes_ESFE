@@ -2,6 +2,7 @@ const Torneo = require('../models/Torneo');
 const Partido = require('../models/Partido');
 const Equipo = require('../models/Equipo');
 const Jugador = require('../models/Jugador');
+const Convocatoria = require('../models/Convocatoria');
 const crearTorneo = async (req, res) => {
   try {
     const { fecha_inicio, fecha_fin } = req.body;
@@ -62,6 +63,16 @@ const actualizarTorneo = async (req, res) => {
 
 const eliminarTorneo = async (req, res) => {
   try {
+    const tienePartidos = await Partido.findOne({ torneo_id: req.params.id });
+    if (tienePartidos) {
+      return res.status(400).json({ error: 'No se puede eliminar el torneo porque tiene partidos programados o disputados' });
+    }
+
+    const tieneConvocatorias = await Convocatoria.findOne({ torneo_id: req.params.id });
+    if (tieneConvocatorias) {
+      return res.status(400).json({ error: 'No se puede eliminar el torneo porque tiene convocatorias vinculadas' });
+    }
+
     const torneo = await Torneo.findByIdAndDelete(req.params.id);
     if (!torneo) {
       return res.status(404).json({ error: 'Torneo no encontrado' });
@@ -76,16 +87,20 @@ const inscribirEquipo = async (req, res) => {
     const { id } = req.params;
     const { equipo_id, fecha_inscripcion, firma } = req.body;
 
+    const torneo = await Torneo.findById(id);
+    if (!torneo) {
+      return res.status(404).json({ error: 'Torneo no encontrado' });
+    }
+
+    if (torneo.estado === 'finalizado') {
+      return res.status(400).json({ error: 'No se pueden inscribir equipos en un torneo finalizado' });
+    }
+
     if (req.usuario.rol === 'delegado') {
       const equipo = await Equipo.findById(equipo_id);
       if (!equipo || equipo.delegado_id.toString() !== req.usuario.id) {
         return res.status(403).json({ error: 'Solo puedes inscribir tu propio equipo' });
       }
-    }
-
-    const torneo = await Torneo.findById(id);
-    if (!torneo) {
-      return res.status(404).json({ error: 'Torneo no encontrado' });
     }
 
     const yaInscrito = torneo.equipos_inscritos.some(
@@ -190,7 +205,7 @@ const obtenerTablaPosiciones = async (req, res) => {
 const obtenerTablaTarjetas = async (req, res) => {
   try {
     const { id } = req.params;
-    const partidos = await Partido.find({ torneo_id: id });
+    const partidos = await Partido.find({ torneo_id: id, estado: 'finalizado' });
 
     const tarjetas = {};
 
@@ -240,7 +255,7 @@ const obtenerTablaTarjetas = async (req, res) => {
 const obtenerTablaGoleadores = async (req, res) => {
   try {
     const { id } = req.params;
-    const partidos = await Partido.find({ torneo_id: id });
+    const partidos = await Partido.find({ torneo_id: id, estado: 'finalizado' });
 
     const goleadores = {};
 

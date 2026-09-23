@@ -1,8 +1,9 @@
 const Equipo = require('../models/Equipo');
+const Partido = require('../models/Partido');
 
 const crearEquipo = async (req, res) => {
   try {
-    const { delegado_id } = req.body;
+    const { delegado_id, jugadores_inscritos } = req.body;
 
     if (req.usuario.rol === 'delegado' && delegado_id !== req.usuario.id) {
       return res.status(403).json({ error: 'Un delegado solo puede asignarse a sí mismo como delegado del equipo' });
@@ -12,6 +13,16 @@ const crearEquipo = async (req, res) => {
       const yaAsignado = await Equipo.findOne({ delegado_id });
       if (yaAsignado) {
         return res.status(400).json({ error: 'Este delegado ya está asignado a otro equipo' });
+      }
+    }
+
+    if (jugadores_inscritos && Array.isArray(jugadores_inscritos)) {
+      const dorsalesActivos = jugadores_inscritos
+        .filter((j) => j.estado !== 'baja')
+        .map((j) => Number(j.dorsal));
+      const dorsalesUnicos = new Set(dorsalesActivos);
+      if (dorsalesUnicos.size !== dorsalesActivos.length) {
+        return res.status(400).json({ error: 'No pueden haber dos jugadores con el mismo número de dorsal en el equipo' });
       }
     }
 
@@ -94,6 +105,16 @@ const actualizarEquipo = async (req, res) => {
       }
     }
 
+    if (req.body.jugadores_inscritos && Array.isArray(req.body.jugadores_inscritos)) {
+      const dorsalesActivos = req.body.jugadores_inscritos
+        .filter((j) => j.estado !== 'baja')
+        .map((j) => Number(j.dorsal));
+      const dorsalesUnicos = new Set(dorsalesActivos);
+      if (dorsalesUnicos.size !== dorsalesActivos.length) {
+        return res.status(400).json({ error: 'No pueden haber dos jugadores con el mismo número de dorsal en el equipo' });
+      }
+    }
+
     const equipo = await Equipo.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
@@ -106,6 +127,13 @@ const actualizarEquipo = async (req, res) => {
 
 const eliminarEquipo = async (req, res) => {
   try {
+    const tienePartidos = await Partido.findOne({
+      $or: [{ equipo_local_id: req.params.id }, { equipo_visitante_id: req.params.id }],
+    });
+    if (tienePartidos) {
+      return res.status(400).json({ error: 'No se puede eliminar el equipo porque tiene partidos registrados en el sistema' });
+    }
+
     const equipo = await Equipo.findByIdAndDelete(req.params.id);
     if (!equipo) {
       return res.status(404).json({ error: 'Equipo no encontrado' });

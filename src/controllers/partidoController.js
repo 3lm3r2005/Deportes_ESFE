@@ -2,12 +2,49 @@ const Partido = require('../models/Partido');
 const Torneo = require('../models/Torneo');
 const Equipo = require('../models/Equipo');
 
+const validarGolesJugadores = (partidoData) => {
+  const { goles_local, goles_visitante, estadisticas_jugadores, equipo_local_id, equipo_visitante_id } = partidoData;
+  if (!estadisticas_jugadores || !Array.isArray(estadisticas_jugadores)) return null;
+
+  const golesPorEquipo = {};
+  for (const s of estadisticas_jugadores) {
+    if (s.goles && s.goles < 0) {
+      return 'Los goles de un jugador no pueden ser negativos';
+    }
+    const eqId = s.equipo_id ? s.equipo_id.toString() : null;
+    if (eqId) {
+      golesPorEquipo[eqId] = (golesPorEquipo[eqId] || 0) + (Number(s.goles) || 0);
+    }
+  }
+
+  if (equipo_local_id && goles_local !== undefined) {
+    const totalLocal = golesPorEquipo[equipo_local_id.toString()] || 0;
+    if (totalLocal > Number(goles_local)) {
+      return `Los goles individuales del equipo local (${totalLocal}) no pueden superar el marcador del equipo (${goles_local})`;
+    }
+  }
+
+  if (equipo_visitante_id && goles_visitante !== undefined) {
+    const totalVisitante = golesPorEquipo[equipo_visitante_id.toString()] || 0;
+    if (totalVisitante > Number(goles_visitante)) {
+      return `Los goles individuales del equipo visitante (${totalVisitante}) no pueden superar el marcador del equipo (${goles_visitante})`;
+    }
+  }
+
+  return null;
+};
+
 const crearPartido = async (req, res) => {
   try {
     const { torneo_id, equipo_local_id, equipo_visitante_id } = req.body;
 
     if (equipo_local_id === equipo_visitante_id) {
       return res.status(400).json({ error: 'Un equipo no puede jugar contra sí mismo' });
+    }
+
+    const errorGoles = validarGolesJugadores(req.body);
+    if (errorGoles) {
+      return res.status(400).json({ error: errorGoles });
     }
 
     const torneo = await Torneo.findById(torneo_id);
@@ -137,6 +174,15 @@ const actualizarPartido = async (req, res) => {
       if (!idsInscritos.includes(equipoVisitanteId)) {
         return res.status(400).json({ error: 'El equipo visitante no está inscrito en ese torneo' });
       }
+    }
+
+    const datosFusionados = {
+      ...partidoActual.toObject(),
+      ...req.body,
+    };
+    const errorGoles = validarGolesJugadores(datosFusionados);
+    if (errorGoles) {
+      return res.status(400).json({ error: errorGoles });
     }
 
     const partido = await Partido.findByIdAndUpdate(req.params.id, req.body, {

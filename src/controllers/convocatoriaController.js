@@ -3,7 +3,11 @@ const Torneo = require('../models/Torneo');
 
 const crearConvocatoria = async (req, res) => {
   try {
-    const { torneo_id } = req.body;
+    const { torneo_id, fecha_publicacion, fecha_limite } = req.body;
+
+    if (fecha_publicacion && fecha_limite && new Date(fecha_limite) < new Date(fecha_publicacion)) {
+      return res.status(400).json({ error: 'La fecha límite no puede ser anterior a la fecha de publicación' });
+    }
 
     const torneo = await Torneo.findById(torneo_id);
     if (!torneo) {
@@ -40,6 +44,12 @@ const obtenerConvocatoria = async (req, res) => {
 
 const actualizarConvocatoria = async (req, res) => {
   try {
+    const { fecha_publicacion, fecha_limite } = req.body;
+
+    if (fecha_publicacion && fecha_limite && new Date(fecha_limite) < new Date(fecha_publicacion)) {
+      return res.status(400).json({ error: 'La fecha límite no puede ser anterior a la fecha de publicación' });
+    }
+
     const convocatoria = await Convocatoria.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
