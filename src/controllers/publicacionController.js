@@ -18,8 +18,27 @@ const crearPublicacion = async (req, res) => {
 
 const listarPublicaciones = async (req, res) => {
   try {
-    const publicaciones = await Publicacion.find().sort({ fecha_publicacion: -1 });
-    res.status(200).json(publicaciones);
+    const publicaciones = await Publicacion.find()
+      .populate('autor_id', 'nombre apellido foto_url')
+      .populate('comentarios.autor_id', 'nombre apellido foto_url')
+      .sort({ fecha_publicacion: -1 });
+
+    const publicacionesFormateadas = publicaciones.map((pub) => {
+      const p = pub.toObject();
+      if (p.comentarios && Array.isArray(p.comentarios)) {
+        p.comentarios = p.comentarios.map((c) => {
+          if (c.autor_id && typeof c.autor_id === 'object') {
+            c.autor_foto = c.autor_id.foto_url || c.autor_foto;
+            c.autor_nombre = `${c.autor_id.nombre || ''} ${c.autor_id.apellido || ''}`.trim() || c.autor_nombre;
+            c.autor_id = c.autor_id._id;
+          }
+          return c;
+        });
+      }
+      return p;
+    });
+
+    res.status(200).json(publicacionesFormateadas);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -53,6 +72,21 @@ const eliminarPublicacion = async (req, res) => {
   }
 };
 
+const formatearPublicacion = (publicacionDoc) => {
+  const p = publicacionDoc.toObject ? publicacionDoc.toObject() : publicacionDoc;
+  if (p.comentarios && Array.isArray(p.comentarios)) {
+    p.comentarios = p.comentarios.map((c) => {
+      if (c.autor_id && typeof c.autor_id === 'object') {
+        c.autor_foto = c.autor_id.foto_url || c.autor_foto;
+        c.autor_nombre = `${c.autor_id.nombre || ''} ${c.autor_id.apellido || ''}`.trim() || c.autor_nombre;
+        c.autor_id = c.autor_id._id;
+      }
+      return c;
+    });
+  }
+  return p;
+};
+
 const agregarComentario = async (req, res) => {
   try {
     const { mensaje } = req.body;
@@ -72,11 +106,17 @@ const agregarComentario = async (req, res) => {
     });
 
     await publicacion.save();
-    res.status(201).json(publicacion);
+
+    const publicacionActualizada = await Publicacion.findById(req.params.id)
+      .populate('autor_id', 'nombre apellido foto_url')
+      .populate('comentarios.autor_id', 'nombre apellido foto_url');
+
+    res.status(201).json(formatearPublicacion(publicacionActualizada));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
 const editarComentario = async (req, res) => {
   try {
     const { mensaje } = req.body;
@@ -97,7 +137,12 @@ const editarComentario = async (req, res) => {
 
     comentario.mensaje = mensaje;
     await publicacion.save();
-    res.status(200).json(publicacion);
+
+    const publicacionActualizada = await Publicacion.findById(req.params.id)
+      .populate('autor_id', 'nombre apellido foto_url')
+      .populate('comentarios.autor_id', 'nombre apellido foto_url');
+
+    res.status(200).json(formatearPublicacion(publicacionActualizada));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -121,7 +166,12 @@ const eliminarComentario = async (req, res) => {
 
     comentario.deleteOne();
     await publicacion.save();
-    res.status(200).json(publicacion);
+
+    const publicacionActualizada = await Publicacion.findById(req.params.id)
+      .populate('autor_id', 'nombre apellido foto_url')
+      .populate('comentarios.autor_id', 'nombre apellido foto_url');
+
+    res.status(200).json(formatearPublicacion(publicacionActualizada));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

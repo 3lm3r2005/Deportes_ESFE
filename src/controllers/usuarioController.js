@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const Usuario = require('../models/Usuario');
 const Equipo = require('../models/Equipo');
 const Partido = require('../models/Partido');
+const Publicacion = require('../models/Publicacion');
 
 const crearUsuario = async (req, res) => {
   try {
@@ -84,6 +85,15 @@ const actualizarUsuario = async (req, res) => {
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+
+    if (datosActualizar.foto_url !== undefined) {
+      await Publicacion.updateMany(
+        { 'comentarios.autor_id': req.params.id },
+        { $set: { 'comentarios.$[elem].autor_foto': datosActualizar.foto_url } },
+        { arrayFilters: [{ 'elem.autor_id': req.params.id }] }
+      );
+    }
+
     res.status(200).json(usuario);
   } catch (error) {
     if (error.code === 11000) {
@@ -104,6 +114,15 @@ const actualizarMiPerfil = async (req, res) => {
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+
+    if (req.body.foto_url !== undefined) {
+      await Publicacion.updateMany(
+        { 'comentarios.autor_id': req.usuario.id },
+        { $set: { 'comentarios.$[elem].autor_foto': req.body.foto_url } },
+        { arrayFilters: [{ 'elem.autor_id': req.usuario.id }] }
+      );
+    }
+
     res.status(200).json(usuario);
   } catch (error) {
     res.status(400).json({ error: error.message });
